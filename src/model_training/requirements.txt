@@ -1,0 +1,7 @@
+pandas
+datasets
+sentence-transformers
+datetime
+transformers==4.57.6
+mflow
+accelerate
