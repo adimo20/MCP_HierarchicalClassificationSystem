@@ -1,4 +1,4 @@
-```markdown
+
 # MCP Hierarchical Classification System 
 This repository contains a Model Context Protocol (MCP) server and an AI agent designed to automatically classify products, services, and household expenses according to the **SEA (Systematik der Einnahmen und Ausgaben der Privaten Haushalte)**. 
 
@@ -127,6 +127,5 @@ python src/model_training/MNRL.py \
 
 *Note: The script integrates natively with MLflow to track parameters, evaluation recall, and loss metrics.*
 
-```
 
-```
+
