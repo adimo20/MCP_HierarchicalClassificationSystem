@@ -150,6 +150,7 @@ class Retriever:
                 label_key=self.label_key_in_collection,
                 search_type=search_type
             )
+            print(code_example_dict)
 
             if not use_examples:
                 code_example_dict = None

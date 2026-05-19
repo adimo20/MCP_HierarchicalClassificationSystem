@@ -103,6 +103,7 @@ def get_code_specification(list_of_codes: list[str]) -> str:
     Generates a comprehensive, definitive Markdown report for specific SEA classification codes.
     
     WHEN TO USE THIS:
+    - Use this only with codes **that you do not already have seen a detailled descritpiton** when using a semantic or fulltext search.
     - Use this to VERIFY if a product belongs in a specific category.
     - Use this when you need the official rules, inclusions, and exclusions for a specific code.
     - If you are debating between two or more codes, pass them both in the list to compare their exact specifications.
@@ -139,7 +140,7 @@ def semantic_search(q: str, k: int) -> str:
     Args:
         q (str): The raw, natural language product description (e.g., "Organic Whole Grain Bread").
         k (int): The number of nearest neighbor results to retrieve from the vector database. 
-                 A good default is 5 to 10 depending on desired broadness.
+                 A good default is 10 to 20 depending on desired broadness.
 
     Returns:
         str: A comprehensive Markdown-formatted context string containing the original input, 

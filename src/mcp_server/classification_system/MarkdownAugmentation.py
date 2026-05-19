@@ -73,9 +73,14 @@ class MarkdownExample:
             )
         ]
         
-        code_markdown_format:str = "\n".join([self.header_plus_content(header=h, content=c, highlight_content=highlight) for h, c, highlight in conf])
-
-        if examples is not None and examples != []:         
+        code_markdown_format:str = "\n".join(
+            [
+                self.header_plus_content(header=h, content=c, highlight_content=highlight)
+                for h, c, highlight in conf
+            ]
+        )
+         
+        if examples is not None and examples != []:      
             code_markdown_format = code_markdown_format + self.generate_examples_part(
                 examples=examples
             )
@@ -126,12 +131,12 @@ class MarkdownReport:
             examples = [examples_dict.get(c.code, []) for c in codes]
         else: 
             examples = [[] for _ in range(len(codes))]
-        
         return "\n---\n".join(
             [
                 MarkdownExample().code_to_markdown(
-                    code,
-                    trace
+                    code=code,
+                    trace=trace,
+                    examples=ex
                 ) for code, trace, ex in zip(codes, trace_formatted, examples)
             ]
         )
