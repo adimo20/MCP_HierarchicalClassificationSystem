@@ -11,8 +11,15 @@ load_dotenv()
 
 @register_embedding_function
 class CustomEmbeddingFunction(EmbeddingFunction):
+    """
+    Registers a custom embedding function that will be used to a) embedd the documents/historical examples inside 
+    chromaDB and b) encode queries when retrieving examples from the chromaDB
+    The structure of this class follows the chromaDB examples inside the documentation of chroma, for reference look there.
+    Args: 
+        model (str): either path to the custom trained model on your disk or identified for an embedding model, that will be pulled from hugging face
 
-    def __init__(self, model:str):
+    """
+    def __init__(self, model:str):#Change the name of this argument, because model != self.model 
         self.model = SentenceTransformer(model)
 
     def __call__(self, input_docs: Documents) -> Embeddings:
@@ -32,6 +39,16 @@ class CustomEmbeddingFunction(EmbeddingFunction):
         return CustomEmbeddingFunction(config['model'])
 
 class VectorStore:
+
+    """
+    Interface for filling and querying the chromaDB (persistent) client
+
+        collection_name (str) - name of the collection you want to create/load
+        model_name (str) - name of the model to use for embedding and querying the collection
+        chromadb_path (str) - Path to the persistent client loaded or to create
+    
+    """
+
     def __init__(
         self, 
         collection_name:str, 
@@ -40,7 +57,7 @@ class VectorStore:
     ) -> None:
 
         """
-        vector store conntect/loads persistent directory either locally or conntects to http chroma client. http client seems to be faster.
+        Embedding Model, Chroma Client and Collection is loaded.
         """
         
         self.model_name:str = model_name
@@ -60,11 +77,16 @@ class VectorStore:
 
     def chunk_list(
         self,
-        list_to_chunk:List,
+        list_to_chunk:List[Any],
         chunk_size:int
     )-> List[Any]:
         """
-        Chunks a list into chunks of size chunks_size
+        Splits a list of elements into chunks of size chunk_size, used for adding elements to the chromaDB without 
+        breaking the batch size of chroma
+        
+        Args:
+            list_to_chunk (List[Any]) - list to chunk
+            chunk_size (int) - maximum chunk size
         """
         return[list_to_chunk[i:i + chunk_size] for i in range(0, len(list_to_chunk), chunk_size)]
 
@@ -75,7 +97,14 @@ class VectorStore:
         metadatas:List[Any]
     )->None:
         """
-        Adds entries to the chroma collection
+        Adds entries to the chroma collection. The lists will be chunked to not break the chromaDB batch size for 
+        adding documents.
+        Args:
+            ids (List[str]) - ids of documents
+            documents:List[str] - list of documents/historic examples to embedd
+            metadatas:List[Any] - metadata to store alongside the documents, should be list of dictionary, where at least one key value pair corresponds to {"label_or_code":"Label/Code related to a document"}
+        Returns:
+            None - embedding and documents are stored in the persistent client at the path specified at the beginning on disk
         """ 
         BATCH_SIZE_CHROMA:int = 5000
         

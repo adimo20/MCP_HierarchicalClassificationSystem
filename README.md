@@ -1,20 +1,18 @@
 
 # MCP Hierarchical Classification System 
-This repository contains a Model Context Protocol (MCP) server and an AI agent designed to automatically classify products, services, and household expenses according to the **SEA (Systematik der Einnahmen und Ausgaben der Privaten Haushalte)**. 
-
-The project leverages a combination of semantic vector search, full-text retrieval, hierarchical traversal tools, and a DSPy-powered ReAct agent to act as an expert classification auditor with zero-hallucination constraints.
+This repository contains a Model Context Protocol (MCP) server design to be applicable for classification tasks in hierarchical classification systems, like **COICOP (Classification of individual consumption by purpose)**, **NACE (Statistical Classification of Economic Activities in the European Community)** and similiar system in official statistics.
 
 ---
 
 ## Key Features
 
-* **FastMCP Server**: Exposes a robust suite of tools via Server-Sent Events (SSE) for querying and navigating the SEA classification tree.
-* **Hybrid Retrieval (ChromaDB)**: 
-  * *Semantic Search:* Uses fine-tuned SentenceTransformer embeddings to classify complex or descriptive items.
-  * *Full-Text Search:* Uses exact keyword matching for standardized nouns.
-* **Hierarchical Navigation**: Built-in logic to drill down into child categories or abstract up to parent categories when user input is ambiguous.
+* **FastMCP Server**: Exposes a set of tools via Server-Sent Events (SSE) for querying historic data and navigating the classification system, like a tree.
+  * **Hybrid Retrieval (ChromaDB)**: 
+    * *Semantic Search:* Uses fine-tuned SentenceTransformer embeddings to retrieve relevant labelled historic examples.
+    * *Full-Text Search:* Uses exact keyword matching for the retrieval of very general and standardized nouns.
+  * **Hierarchical Navigation**: Built-in logic to drill down into child categories or abstract up to parent categories when user input is ambiguous. CAn be used to **hierarchically search** the classification system from top to bottom.
 * **DSPy Agent Integration**: An advanced ReAct agent that strictly adheres to Standard Operating Procedures (SOPs) to ensure factual, traceable, and accurate classifications.
-* **Custom Model Training**: Includes a pipeline (`MNRL.py`) for fine-tuning SentenceTransformer models using Multiple Negatives Ranking Loss (MNRL) and tracking experiments with MLflow.
+* **Custom Model Training**: Includes a pipeline (`MNRL.py`) for fine-tuning SentenceTransformer models using Multiple Negatives Ranking Loss (MNRL) and tracking experiments with MLflow. 
 
 ---
 
@@ -41,20 +39,31 @@ The project leverages a combination of semantic vector search, full-text retriev
 
 ## Available MCP Tools
 
-The `server.py` exposes the following tools to large language models or agents:
+The `server.py` exposes the following tools to agents:
 
-1. **`get_root_category_codes_and_descriptions`**: Returns the top-level divisions (root categories) of the SEA classification system. Used as a starting point for entirely new items.
+1. **`get_root_category_codes_and_descriptions`**: Returns the top-level divisions (root categories) of the hierarchical classification system. Used as a starting point for entirely new items that the agent can't classify based on the historical data.
 2. **`get_children(parent_code)`**: Collects direct child categories for a given parent code to drill down into the hierarchy.
 3. **`get_parent(parent_code)`**: Retrieves the immediate parent category. Used for abstraction when a search finds a highly specific code but the input lacks sufficient detail to justify it.
 4. **`get_code_specification(list_of_codes)`**: Generates a definitive Markdown report detailing the official rules, inclusions, exclusions, and hierarchical trace for specific codes.
-5. **`semantic_search(q, k)`**: Performs a natural language similarity search over historical data to suggest SEA codes for complex/descriptive strings (e.g., "Organic Whole Grain Wheat Bread").
-6. **`full_text_search(q, k)`**: Performs exact keyword matching over historical data for short, exact nouns (e.g., "Jeans", "Milch").
+5. **`semantic_search(q, k)`**: Performs a natural language similarity search over labelled historical data to suggest codes for complex/descriptive strings (e.g., "Organic Whole Grain Wheat Bread").
+6. **`full_text_search(q, k)`**: Performs exact keyword matching over labelled historical data for short, exact nouns (e.g., "Jeans", "Milk").
 
 ---
 
+## Problems in hierarchical classification systems
+
+This is nessecary because in certain cases the input that an agent receives will be too general to reach a certain level of specifity within the classification system, without guessing, which we want to prevent. 
+  * **Example:** You need to classify the string `Milk` in the household budget surveys within the COICOP at level 4. At this level the COICOP makes a distinction between whole milk (`01141`) and semi-skimmed milk (`01142`). Based on only the string milk you cannot assign a correct COICOP code without guessing. Therefore, we must resort to the code `0114 Milk, other dairy products and eggs (ND)` which is the parent code for 
+
 ## Setup and Usage
 
-### Prerequisites
+### Data requirements
+
+The MCP-Server relies on two central data sources:
+  * **Documentation of a classification system** - loaded into the server in a specific json-format.
+  * **Vector-Database, incl. finetuned embedding model for retrieval** - If you have access to a reasonably amount of high quality annotated 
+
+### Technical Prerequisites
 
 * Python 3.10+
 * A running instance of ChromaDB or a local persistent path setup.

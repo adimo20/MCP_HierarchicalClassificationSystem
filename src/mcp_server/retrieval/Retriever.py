@@ -5,6 +5,21 @@ from collections import defaultdict
 from typing import Literal, Dict, Any, List
 
 class Retriever:
+
+        """
+        Retrieves relevant labels from a chromaDB (containing historic labelled data) and returns a comprehensive markdown
+        summary about the retrieved content/examples and their corresponding codes
+
+        Args:
+            chromadb_path (str) - path to you chromaDB directory.
+            collection_name (str) - Name of the collection where the embedded historical labelled data is stored inside the chroma persistent client
+            model_name (str) - Name of the embedding model used to embedded the historical examples IMPORTANT make sure this matches the model you used while embedding the examples otherwise you'll receive non-sense examples when you query the retriever
+            path_classification_system (str) - path to the json object where the classification system details are stored.
+            classification_name (str) - name of the classification system you use, e.g. COICOP, SEA, NACE
+            label_key_in_collection (str) - key under which you stored the labels inside of the metadata inside the chroma collection
+            
+        """
+
         def __init__(
             self, 
             collection_name:str, 
@@ -47,6 +62,8 @@ class Retriever:
             label_key = "coicop"
         ) -> List[str]:
             """
+            Codes/Labels are stored in the metadata of documents inside chormaDB
+            Extracts the labels from all the entries in metadata. 
             In case you change the spot of the labels in the chroma db just change this!
             """
             return [m.get(label_key) for m in retrieved_content.get("metadatas")]
@@ -76,7 +93,9 @@ class Retriever:
                     "ids": search_result.get("ids", [[]])[0],
                 }
                 
-                
+            # This needs to be removed and added to a different interface, because the retrieval of documents that contain
+            # certain query is very inefficient, chromaDB handels this metadata search without indexing and searches the entries in 
+            # a brute force manner --> better would a DB approach like sqlite or a simple pandas, polars dataframe lookup  
             elif search_type == "text_search":
                 return self.vector_store.collection.get(
                     where_document={"$contains":q.upper()}, limit=k, offset=0
@@ -90,9 +109,19 @@ class Retriever:
             k:int,
             label_key:str="coicop",
             search_type:Literal["sim_search", "text_search"]="sim_search"
-        )->List[str]:
+        )->tuple[list[str], dict[str, list[str]]]:
             """
-            Query the vector store to get the k most related entries and returns the unique codes
+            Query the vector store to get the k most related entries, collects all relevant and unique codes and arranges the entries by label.
+
+            Args:
+                q (str) - query term you want to look up in the db
+                k (int) - number of examples you want to retrieve
+                label_key (str) - key under which the code is stored in the db
+                search_type (Literal["sim_search", "text_search"]) - specifies the search typ either semantic search (sim_search) or a text based keyword search (text_search)
+            Returns:
+                list[str] - containing all the codes/labels retrieved from the vectorDB
+                dict[str, list[str]] - containing the labels as keys and a list as values containing all the examples related to the key
+
             """
             retrieved_content = self.search_collection(
                 q=q, k=k, search_type=search_type
