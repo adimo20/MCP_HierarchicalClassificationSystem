@@ -18,6 +18,10 @@ from transformers.integrations import MLflowCallback
 # Logging results
 #=================================================================================================
 
+# The results and model can be logged to mlflow mlflow to keep track of your training/versionise your models
+# This class logs all the sentence transformers callbacks to mlflow. You'll receive visualisations of loss decay
+# and the measured success metrics
+# Requirement for that is that you start mlflow before you'll starte the training
 
 class LoggingCallbacks(MLflowCallback):
     """
@@ -66,21 +70,20 @@ TEXT_COLUMN = args.text_column
 LABEL_COLUMN = args.label_column
 
 
-mlflow.log_param("PATH_TRAINING_DATA_RAW", PATH_TRAINING_DATA_RAW)
-mlflow.log_param("PATH_TRAINING_DATA_STORAGE", PATH_TRAINING_DATA_STORAGE)
-mlflow.log_param("MODEL_PATH", MODEL_PATH)
-mlflow.log_param("OUTPUT_DIR", OUTPUT_DIR)
-mlflow.log_param("BATCH_SIZE", BATCH_SIZE)
-mlflow.log_param("TEXT_COLUMN", TEXT_COLUMN)
-mlflow.log_param("LABEL_COLUMN", LABEL_COLUMN)
+mlflow.log_param("PATH_TRAINING_DATA_RAW", PATH_TRAINING_DATA_RAW) # Path where the full training data is stored
+mlflow.log_param("PATH_TRAINING_DATA_STORAGE", PATH_TRAINING_DATA_STORAGE) # Path where to store store the training/test-dataset after train-test-split
+mlflow.log_param("MODEL_PATH", MODEL_PATH) # If you're using a local model, specify the path to your model file here otherwise, just specify the hf-model id
+mlflow.log_param("OUTPUT_DIR", OUTPUT_DIR) # Path where you want to store the trained model/checkpoints
+mlflow.log_param("BATCH_SIZE", BATCH_SIZE) # Batch size for model training
+# Assuming you store your training data in a tabular format, e.g. csv, parquet, ... 
+mlflow.log_param("TEXT_COLUMN", TEXT_COLUMN) # Column name of the text/input you want to process
+mlflow.log_param("LABEL_COLUMN", LABEL_COLUMN) # Column name where you store the labels
 
 #=================================================================================================
 # Loading Data and Constructing Corpus/Training/Testing Data
 #=================================================================================================
 
 df = pd.read_parquet(PATH_TRAINING_DATA_RAW)
-
-df.to_parquet(PATH_TRAINING_DATA_RAW)
 
 train_df = df.sample(frac=0.9, random_state=42)
 train_df.to_parquet(f'{PATH_TRAINING_DATA_STORAGE}/train_{str(datetime.datetime.now())[:10]}.parquet')
@@ -89,6 +92,11 @@ test_df = df.drop(train_df.index)
 test_df.to_parquet(f'{PATH_TRAINING_DATA_STORAGE}/test_{str(datetime.datetime.now())[:10]}.parquet')
 
 
+
+#=================================================================================================
+# Creating train-datasets for the sentence-transformer-trainer
+#=================================================================================================
+
 unique_labels_train, corpus_train = df_to_corpus(
     df=train_df,
     text_column=TEXT_COLUMN,
@@ -96,9 +104,6 @@ unique_labels_train, corpus_train = df_to_corpus(
 )
 
 
-#=================================================================================================
-# Creating test-datasets from the sentence-transformer-trainer
-#=================================================================================================
 
 features = Features({
     "anchor": Value("string"),

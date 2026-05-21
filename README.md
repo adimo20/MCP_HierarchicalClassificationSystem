@@ -1,18 +1,19 @@
 
 # MCP Hierarchical Classification System 
-This repository contains a Model Context Protocol (MCP) server design to be applicable for classification tasks in hierarchical classification systems, like **COICOP (Classification of individual consumption by purpose)**, **NACE (Statistical Classification of Economic Activities in the European Community)** and similiar system in official statistics.
 
----
+This repository implements an MCP Server that enables RAG agents to **retrieve relevant examples and codes**, within a hierarchical classification systems, like COICOP or NACE. When an agent retrieves relevant examples using semantic search or a keyword based search from a dataset of labelled historical examples it receives a **structured markdown summary** of the contents and meaning of a certain code within the classification system. 
 
-## Key Features
+The repository contains a workflow to **finetune an embedding model**, using multiple negativ ranking loss. This might be nessecary, due to the high domanin specificy of the labelled data used, e.g. heavily abreviated product names or ambigous company names. 
 
-* **FastMCP Server**: Exposes a set of tools via Server-Sent Events (SSE) for querying historic data and navigating the classification system, like a tree.
-  * **Hybrid Retrieval (ChromaDB)**: 
-    * *Semantic Search:* Uses fine-tuned SentenceTransformer embeddings to retrieve relevant labelled historic examples.
-    * *Full-Text Search:* Uses exact keyword matching for the retrieval of very general and standardized nouns.
-  * **Hierarchical Navigation**: Built-in logic to drill down into child categories or abstract up to parent categories when user input is ambiguous. CAn be used to **hierarchically search** the classification system from top to bottom.
-* **DSPy Agent Integration**: An advanced ReAct agent that strictly adheres to Standard Operating Procedures (SOPs) to ensure factual, traceable, and accurate classifications.
-* **Custom Model Training**: Includes a pipeline (`MNRL.py`) for fine-tuning SentenceTransformer models using Multiple Negatives Ranking Loss (MNRL) and tracking experiments with MLflow. 
+The MCP server also provides the agent with tools to **hierarchally search the classification system** for relevant codes, when semantic and keyword search did not lead to a relevant code.
+
+Key features of the MCP-Server:
+* Retrieval of relevant examples using semantic and keyword based search
+* Hierarchical exploration of the classification system
+
+
+**IMPORTANT NOTICE:** The project you find here is still in development and will be constantly append. More documentation and notebooks with examples will follow in the near future
+
 
 ---
 
@@ -41,19 +42,20 @@ This repository contains a Model Context Protocol (MCP) server design to be appl
 
 The `server.py` exposes the following tools to agents:
 
-1. **`get_root_category_codes_and_descriptions`**: Returns the top-level divisions (root categories) of the hierarchical classification system. Used as a starting point for entirely new items that the agent can't classify based on the historical data.
-2. **`get_children(parent_code)`**: Collects direct child categories for a given parent code to drill down into the hierarchy.
-3. **`get_parent(parent_code)`**: Retrieves the immediate parent category. Used for abstraction when a search finds a highly specific code but the input lacks sufficient detail to justify it.
-4. **`get_code_specification(list_of_codes)`**: Generates a definitive Markdown report detailing the official rules, inclusions, exclusions, and hierarchical trace for specific codes.
-5. **`semantic_search(q, k)`**: Performs a natural language similarity search over labelled historical data to suggest codes for complex/descriptive strings (e.g., "Organic Whole Grain Wheat Bread").
-6. **`full_text_search(q, k)`**: Performs exact keyword matching over labelled historical data for short, exact nouns (e.g., "Jeans", "Milk").
+* **Hierachical Tree exploration**:
 
+  1. **`get_root_category_codes_and_descriptions()`**: returns all the top level division codes for a given classification system
+  2. **`get_children(parent_code)`**: collects and returns all the children codes for a given parent code.
+  3. **`get_parent(parent_code)`**: collects and returns the parent codes for a given children code.
+  4. **`get_code_specification(list_of_codes)`**: creates a comprehensive markdown formatted summary of the contents and meaning of a given code.
+
+* **Relevant examples/codes retrieval**:
+
+  5. **`semantic_search(q, k)`**: performs a semantic search over a set of embedded labelled examples using ChromaDB
+  6. **`full_text_search(q, k)`**:perfroms a keyword based search of a set of labelled examples in side the ChromaDB
+
+* Note: When retrieving relevants Codes using the two search methods the returned results will always be returned in a comprehensive markdown format.
 ---
-
-## Problems in hierarchical classification systems
-
-This is nessecary because in certain cases the input that an agent receives will be too general to reach a certain level of specifity within the classification system, without guessing, which we want to prevent. 
-  * **Example:** You need to classify the string `Milk` in the household budget surveys within the COICOP at level 4. At this level the COICOP makes a distinction between whole milk (`01141`) and semi-skimmed milk (`01142`). Based on only the string milk you cannot assign a correct COICOP code without guessing. Therefore, we must resort to the code `0114 Milk, other dairy products and eggs (ND)` which is the parent code for 
 
 ## Setup and Usage
 
