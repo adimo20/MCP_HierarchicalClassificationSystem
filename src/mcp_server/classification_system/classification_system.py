@@ -164,7 +164,7 @@ class ClassificationSystem:
     def _is_child(
         self,
         parent: str,
-        : str
+        potential_child: str
     ) -> bool:
         """Checks if the parent is related to the potential_child, 
         is true when parent="XX" -> potential_child "XXY" = Shared root.
