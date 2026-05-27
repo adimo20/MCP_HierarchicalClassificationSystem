@@ -188,7 +188,7 @@ class MarkdownReport:
         """
         codes: list[Code] = [self.classification.get_code(code) for code in list_of_codes if code in self.classification._lookup]
     
-        trace_formatted: list[str] = [
+        trace_formatted: list[list[tuple]] = [
             self.classification.get_code_trace(code.code)
             for code in codes
         ]

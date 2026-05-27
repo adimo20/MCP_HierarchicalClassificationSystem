@@ -1,5 +1,6 @@
 import pytest
-from classification_system import ClassificationSystem, Code
+from classification_system.classification_system import ClassificationSystem, Code
+from classification_system.MarkdownAugmentation import MarkdownExample, MarkdownReport
 
 
 @pytest.fixture(params=["clean", "dots", "spaces"])
@@ -135,3 +136,43 @@ def test_parent_children_relationships(system_variant, parent, expected_children
 def test_code_traces(system_variant, code, expected_trace):
     """Verifies that the correct code traces will be extracted"""
     assert system_variant.get_code_trace(code=code) == expected_trace
+
+@pytest.fixture
+def example():
+    return MarkdownExample()
+
+
+@pytest.mark.parametrize(
+    "header, content, header_degree, highlight_content, expected_output",
+    [
+        ("Hallo", "Test 1", 2, False, "## Hallo\nTest 1\n"),
+        ("Hallo", "Test 1", 2, True, "## Hallo\n**Test 1**\n")
+    ]
+)
+def test_header_plus_content(example, header, content, header_degree, highlight_content,  expected_output):
+    assert example.header_plus_content(header=header,content=content,header_degree=header_degree, highlight_content=highlight_content) == expected_output
+
+@pytest.mark.parametrize(
+    "examples_list, expected_output",
+    [
+        (["Käse", "Milch", "Eier"], "## Beispiele \n* Käse\n* Milch\n* Eier"),
+    ]
+)
+def test_generate_examples_part(example, examples_list,  expected_output):
+    assert example.generate_examples_part(examples=examples_list) == expected_output
+
+@pytest.mark.parametrize(
+    "examples_traces, expected_output",
+    [
+        (
+            [
+                ("01", "FOOD AND NON-ALCOHOLIC BEVERAGES"),
+                ("011", "FOOD")
+            ], 
+        "`Abteilung 01`: **FOOD AND NON-ALCOHOLIC BEVERAGES** <br> \n`Gruppe 011`: **FOOD** <br> \n"
+        ),
+    ]
+)
+def test_format_traces_to_markdown(example, examples_traces,  expected_output):
+    assert example.format_traces_to_markdown(trace=examples_traces) == expected_output
+
