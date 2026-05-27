@@ -434,7 +434,7 @@ Additionally, the pipeline provides experiment tracking out of the box via **MLf
 
 The execution stack is split into five isolated steps:
 
-#```text
+```text
 ┌─────────────────┐     ┌──────────────────────┐     ┌──────────────────────┐
 │  Parse CLI Args │ ──> │ 90/10 Train/Test Split│ ──> │ Balance & Build Loop │
 └─────────────────┘     └──────────────────────┘     └──────────────────────┘
