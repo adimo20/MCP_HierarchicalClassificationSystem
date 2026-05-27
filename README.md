@@ -195,16 +195,16 @@ The class initializes with an internal taxonomy tracking array to label hierarch
 
 ### Key Methods
 
-* **`header_plus_content(...) -> str`**
+* **`header_plus_content`**
 Generates a standardized Markdown heading and body text snippet. Allows customization of the heading weight (e.g., `##` vs `###`) and text bolding.
-* **`generate_examples_part(examples: list[str]) -> str`**
+* **`generate_examples_part`**
 Converts a Python list of strings into a formatted Markdown bulleted list under a `## Beispiele` header.
-* **`format_traces_to_markdown(trace: list[tuple]) -> str`**
+* **`format_traces_to_markdown`**
 Accepts a code's lineage path and maps it against the internal taxonomy array.
 * *Example Output:*  `Abteilung 01`: FOOD AND NON-ALCOHOLIC BEVERAGES <br>
 
 
-* **`code_to_markdown(...) -> str`**
+* **`code_to_markdown`**
 The primary orchestrator method. It aggregates the category name, code ID, detailed descriptions, structural traces, and optional examples into a single, comprehensive string.
 
 ---

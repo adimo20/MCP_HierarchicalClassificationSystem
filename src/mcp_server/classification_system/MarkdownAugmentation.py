@@ -156,8 +156,6 @@ class MarkdownReport:
         self.path = path
         self.classification_name = classification_name
 
-    def __post_init__(self):
-        """Opens the classification system json file and initialises the Classification System object."""
         with open(self.path, "r", encoding="utf-8") as f:
             data = json.loads(f.read())
         codes: list[Code] = [Code().from_dict(c) for c in data]
