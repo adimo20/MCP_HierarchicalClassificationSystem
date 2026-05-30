@@ -507,7 +507,7 @@ Inteded workflow for set up
  
 ### Technical Prerequisites
 
-* Python 3.10+
+* Python 3.13.2
 * A running instance of ChromaDB or a local persistent path setup.
 * `.env` file configured with your local environment variables.
 
