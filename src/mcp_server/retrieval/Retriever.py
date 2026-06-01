@@ -1,5 +1,6 @@
 import re
 from retrieval.vector_store import VectorStore
+from retrieval.StringMatcher import StringMatcher
 from classification_system.MarkdownAugmentation import MarkdownReport
 from collections import defaultdict
 from typing import Literal, Dict, Any, List
@@ -21,35 +22,20 @@ class Retriever:
         """
 
         def __init__(
-            self, 
-            collection_name:str, 
-            model_name:str, 
-            path_classification_system:str, 
-            classification_name:str, 
+            self,  
             label_key_in_collection:str, 
-            chromadb_path:str
+            vector_store:VectorStore,
+            string_matcher:StringMatcher,
+            classification_system:MarkdownReport
         ) -> None:
             
-            self.model_name = model_name
-            self.collection_name = collection_name
-            self.classification_name = classification_name
-            self.path_classification_system = path_classification_system
-            self.label_key_in_collection = label_key_in_collection # the key that the label of each document is stored under in the metadatas
-            self.chromadb_path = chromadb_path
             
-            self.vector_store = VectorStore(
-                collection_name=self.collection_name,
-                model_name=self.model_name,
-                chromadb_path=self.chromadb_path
-            )
-            self.load_classification_system()
-
-        def load_classification_system(self) -> None:
-            """Initializes the markdown report classification system."""            
-            self.classification_system = MarkdownReport(
-                path = self.path_classification_system,
-                classification_name=self.classification_name
-            )
+            self.label_key_in_collection = label_key_in_collection # the key that the label of each document is stored under in the metadatas
+            
+            # Saving Preloaded VectorStore, StringMatcher, MarkdownReport to init via depency injection 
+            self.vector_store = vector_store
+            self.string_matcher = string_matcher
+            self.classification_system = classification_system
 
         @staticmethod
         def _clean_code(code: str) -> str:
@@ -71,44 +57,30 @@ class Retriever:
         def search_collection(
             self,
             q:str,
-            k:int,
-            search_type:Literal["sim_search", "text_search"]
+            k:int
         ) -> Dict[str, Any]:
             
             """
-            Searches the chroma db. Depending on search type a different approach to find relevant cases is used.
-            Either `sim_search` performs a similiarity search over the embedded documents or when `text_search` is
-            selected a text based search is used, where the condition `text in document == True` will lead a document
-            beeing returned.
+            Searches the chroma db performs a similiarity search over the embedded documents.
             """
             query_upper_case: str = q.upper()
-            if search_type == "sim_search":
-                search_result = self.vector_store.collection.query(
-                    query_texts=[query_upper_case], n_results=k
-                )
-                # Safely handle the nested lists returned by ChromaDB queries
-                return {
-                    "documents": search_result.get("documents", [[]])[0],
-                    "metadatas": search_result.get("metadatas", [[]])[0],
-                    "ids": search_result.get("ids", [[]])[0],
-                }
+            
+            search_result = self.vector_store.collection.query(
+                query_texts=[query_upper_case], n_results=k
+            )
+            # Safely handle the nested lists returned by ChromaDB queries
+            return {
+                "documents": search_result.get("documents", [[]])[0],
+                "metadatas": search_result.get("metadatas", [[]])[0],
+                "ids": search_result.get("ids", [[]])[0],
+            }
                 
-            # This needs to be removed and added to a different interface, because the retrieval of documents that contain
-            # certain query is very inefficient, chromaDB handels this metadata search without indexing and searches the entries in 
-            # a brute force manner --> better would a DB approach like sqlite or a simple pandas, polars dataframe lookup  
-            elif search_type == "text_search":
-                return self.vector_store.collection.get(
-                    where_document={"$contains":q.upper()}, limit=k, offset=0
-                )
-            # In case wrong search type was used
-            raise ValueError(f"Unsupported search_type: {search_type}")
 
         def get_unique_codes(
             self,
             q:str,
             k:int,
-            label_key:str="coicop",
-            search_type:Literal["sim_search", "text_search"]="sim_search"
+            label_key:str="coicop"
         )->tuple[list[str], dict[str, list[str]]]:
             """
             Query the vector store to get the k most related entries, collects all relevant and unique codes and arranges the entries by label.
@@ -117,14 +89,13 @@ class Retriever:
                 q (str) - query term you want to look up in the db
                 k (int) - number of examples you want to retrieve
                 label_key (str) - key under which the code is stored in the db
-                search_type (Literal["sim_search", "text_search"]) - specifies the search typ either semantic search (sim_search) or a text based keyword search (text_search)
             Returns:
                 list[str] - containing all the codes/labels retrieved from the vectorDB
                 dict[str, list[str]] - containing the labels as keys and a list as values containing all the examples related to the key
 
             """
             retrieved_content = self.search_collection(
-                q=q, k=k, search_type=search_type
+                q=q, k=k
             )
             codes: List[str] = self.get_codes_from_retrieved_content(
                 retrieved_content=retrieved_content, label_key=label_key
@@ -143,7 +114,11 @@ class Retriever:
             return unique_codes, code_example_dict
 
         def create_augmented_context(
-            self, q:str,k:int, use_examples:bool=True, search_type:Literal["sim_search", "text_search"]="sim_search"
+            self,
+            q:str,
+            k:int,
+            use_examples:bool=True,
+            search_type:Literal["sim_search", "text_search"]="sim_search"
         )->str:
             
             """
@@ -172,14 +147,22 @@ class Retriever:
                 trailing zeros, ensuring that codes like '011100' are correctly 
                 mapped to their functional tree counterparts like '0111'.
             """
-            
-            unique_codes, code_example_dict = self.get_unique_codes(
-                q=q,
-                k=k,
-                label_key=self.label_key_in_collection,
-                search_type=search_type
-            )
-            print(code_example_dict)
+            if search_type == "sim_search":
+                unique_codes, code_example_dict = self.get_unique_codes(
+                    q=q,
+                    k=k,
+                    label_key=self.label_key_in_collection
+                )
+            elif search_type == "text_search":
+                unique_codes, code_example_dict = self.string_matcher.match_data(
+                    q=q,
+                    k_per_class=k
+                )
+                print(code_example_dict)
+                if unique_codes is None and code_example_dict is None: return f"# Input \n **Input-Product**: {q} \n\n **No matching item found!**"
+            else:
+                raise ValueError(f"Unsupported search_type: {search_type}")
+
 
             if not use_examples:
                 code_example_dict = None
@@ -197,21 +180,39 @@ if __name__ == "__main__":
 
     load_dotenv()
 
-    retriever = Retriever(
+    vs = VectorStore(
         collection_name=os.getenv("CHROMA_COLLECTION_NAME"),
         model_name=os.getenv("CHROMA_MODEL_NAME"),
-        chromadb_path = os.getenv("CHROMA_CLIENT_PATH"),
-        path_classification_system=os.getenv("CHROMA_PATH_CLASSIFICATION_SYSTEM"),
+        chromadb_path=os.getenv("CHROMA_CLIENT_PATH")
+    )
+    # 
+    matcher = StringMatcher(
+        path_to_df=os.getenv("PATH_TO_DF"), 
+        path_sqlite=os.getenv("PATH_SQLITE"),
+        text_column=os.getenv("TEXT_COLUMN"),
+        label_column=os.getenv("CHROMA_LABEL_KEY_IN_COLLECTION"),
+        table_name=os.getenv("TABLE_NAME")
+    )
+
+    classification_system = MarkdownReport(
+        path=os.getenv("CHROMA_PATH_CLASSIFICATION_SYSTEM"),
         classification_name=os.getenv("CHROMA_CLASSIFICATION_NAME"),
-        label_key_in_collection=os.getenv("CHROMA_LABEL_KEY_IN_COLLECTION")
+    )
+    
+
+    retriever = Retriever(
+        label_key_in_collection=os.getenv("CHROMA_LABEL_KEY_IN_COLLECTION"),
+        vector_store=vs,
+        string_matcher=matcher,
+        classification_system=classification_system
     )
     
     test_result = retriever.create_augmented_context(
-        q="Adidas Speziale",
-        k=25,
-        use_examples=True,
-        search_type="sim_search"
-    )
+            q="HOSE",
+            k=25,
+            use_examples=True,
+            search_type="text_search"
+        )
     print(test_result)
 
 
