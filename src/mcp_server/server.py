@@ -1,19 +1,44 @@
 from fastmcp import FastMCP
 from dotenv import load_dotenv
+from retrieval.vector_store import VectorStore
 from retrieval.Retriever import Retriever
+from retrieval.StringMatcher import StringMatcher
+from classification_system.MarkdownAugmentation import MarkdownReport
+
 from typing import Any
 import os
+import json
 
 load_dotenv()
 
-retriever = Retriever(
-    collection_name=os.getenv("CHROMA_COLLECTION_NAME"),
-    model_name=os.getenv("CHROMA_MODEL_NAME"),
-    path_classification_system=os.getenv("CHROMA_PATH_CLASSIFICATION_SYSTEM"),
-    classification_name=os.getenv("CHROMA_CLASSIFICATION_NAME"),
-    label_key_in_collection=os.getenv("CHROMA_LABEL_KEY_IN_COLLECTION"),
-    chromadb_path=os.getenv("CHROMA_CLIENT_PATH")
+vector_store = VectorStore(
+        collection_name=os.getenv("CHROMA_COLLECTION_NAME"),
+        model_name=os.getenv("CHROMA_MODEL_NAME"),
+        chromadb_path=os.getenv("CHROMA_CLIENT_PATH")
+    )
+
+matcher = StringMatcher(
+    path_to_df=os.getenv("PATH_TO_DF"), 
+    path_sqlite=os.getenv("PATH_SQLITE"),
+    text_column=os.getenv("TEXT_COLUMN"),
+    label_column=os.getenv("CHROMA_LABEL_KEY_IN_COLLECTION"),
+    table_name=os.getenv("TABLE_NAME")
 )
+
+classification_system = MarkdownReport(
+    path=os.getenv("CHROMA_PATH_CLASSIFICATION_SYSTEM"),
+    classification_name=os.getenv("CHROMA_CLASSIFICATION_NAME"),
+)
+    
+
+retriever = Retriever(
+    label_key_in_collection=os.getenv("CHROMA_LABEL_KEY_IN_COLLECTION"),
+    vector_store=vector_store,
+    string_matcher=matcher,
+    classification_system=classification_system
+)
+
+del(matcher, classification_system, vector_store)
 
 mcp: FastMCP[Any] = FastMCP(
     name="MCP-Server for the Classification of products according to the SEA (Systematik der Einnahmen und Ausgaben der Privaten Haushalte)"
@@ -43,7 +68,7 @@ def get_root_category_codes_and_descriptions() -> list[dict]:
     ]
 
 @mcp.tool
-def get_children(parent_code: str) -> list[str]:
+def get_children(parent_code: str) -> list[dict[str,str]]:
     """
     Collects a list of direct child categories for a given parent code within the SEA system.
     
@@ -61,11 +86,16 @@ def get_children(parent_code: str) -> list[str]:
     children: list = retriever.classification_system.classification.get_children(
         parent=parent_code
     )
-    children_json: list[str] = [c.to_json() for c in children]
+    children_json: dict[str,str] = [
+        {
+            "code":c.code,
+            "description":c.description
+        } for c in children
+    ]
     return children_json
 
 @mcp.tool
-def get_parent(parent_code: str) -> list[str]:
+def get_parent(parent_code: str) ->str:
     """
     Retrieves the immediate parent category for a given overly specific SEA code.
     
@@ -93,7 +123,12 @@ def get_parent(parent_code: str) -> list[str]:
     parent = retriever.classification_system.classification.get_code(
         code=child_code
     )
-    children_json:str = parent.to_json()
+
+    children_json:str = json.dumps({
+        "code":parent.code,
+        "description":parent.description
+    }, indent=4, ensure_ascii=False)
+
     return children_json
 
 
