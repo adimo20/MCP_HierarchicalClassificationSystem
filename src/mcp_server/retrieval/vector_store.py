@@ -135,7 +135,7 @@ if __name__ == "__main__":
     
     parser.add_argument("-f", "--filename",type=str)
     parser.add_argument("-m", "--model_name", type=str)
-    parser.add_argument("-c", "collection_name", type=str)
+    parser.add_argument("-c", "--collection_name", type=str)
     parser.add_argument("-tc", "--text_column", type=str)
     parser.add_argument("-lc", "--label_column", type=str)
 
