@@ -177,6 +177,7 @@ class Retriever:
 if __name__ == "__main__":
     from dotenv import load_dotenv
     import os
+    import sys
 
     load_dotenv()
 
@@ -208,7 +209,7 @@ if __name__ == "__main__":
     )
     
     test_result = retriever.create_augmented_context(
-            q="HOSE",
+            q=sys.argv[1],
             k=25,
             use_examples=True,
             search_type="text_search"

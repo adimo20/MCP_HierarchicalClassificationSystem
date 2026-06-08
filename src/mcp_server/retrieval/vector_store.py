@@ -133,11 +133,11 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     
-    parser.add("-f", "--filename",type=str)
-    parser.add("-m", "--model_name", type=str)
-    parser.add("-c", "collection_name", type=str)
-    parser.add("-tc", "--text_column", type=str)
-    parser.add("-lc", "--label_column", type=str)
+    parser.add_argument("-f", "--filename",type=str)
+    parser.add_argument("-m", "--model_name", type=str)
+    parser.add_argument("-c", "--collection_name", type=str)
+    parser.add_argument("-tc", "--text_column", type=str)
+    parser.add_argument("-lc", "--label_column", type=str)
 
     def fill_vector_store(filename:str, model_name:str, collection_name:str, text_column:str, label_column:str):
         """
@@ -156,7 +156,8 @@ if __name__ == "__main__":
 
         store = VectorStore(
             model_name=model_name,
-            collection_name=collection_name
+            collection_name=collection_name,
+            chromadb_path="chroma"
         )
         
         if ".parquet" in filename:
