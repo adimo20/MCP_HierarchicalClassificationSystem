@@ -143,6 +143,13 @@ class MarkdownExample:
 
         return code_markdown_format 
         
+# MarkdownReport Takes a MarkdownExamples class as input. 
+# If you want to change how the given code is shown after augmentation, implement a custom class that contains the method code to markdown, 
+# that receives the following inputs
+#code (Code) - important the input used here is type Code, custom dataclass
+#trace (list[tuple[str, str]]) --> output of the get_trace function of the classifcaiton system
+#examples (list[str]|None) - List of examples you want to add to your code summary, can be left None, in this case no examples will be shown
+#classification_name (str) - Name of the classification system you want to use, will be inserted into the markdown string
 
 class MarkdownReport:
 
@@ -152,9 +159,15 @@ class MarkdownReport:
     a data source, like a chromaDB or wants to look up a certain code it needs specifications for
     """
 
-    def __init__(self, path:str, classification_name:str):
+    def __init__(
+        self,
+        path:str,
+        classification_name:str, 
+        markdown_example=MarkdownExample(),
+    )->None:
         self.path = path
         self.classification_name = classification_name
+        self.markdown_example = markdown_example
 
         with open(self.path, "r", encoding="utf-8") as f:
             data = json.loads(f.read())
@@ -196,7 +209,7 @@ class MarkdownReport:
             examples = [[] for _ in range(len(codes))]
         return "\n---\n".join(
             [
-                MarkdownExample().code_to_markdown(
+                markdown_example.code_to_markdown(
                     code=code,
                     trace=trace,
                     examples=ex
