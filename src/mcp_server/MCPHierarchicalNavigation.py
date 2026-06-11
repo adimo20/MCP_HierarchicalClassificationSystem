@@ -136,4 +136,4 @@ def get_code_specification(list_of_codes: list[str]) -> str:
 
 if __name__ == "__main__":
     
-    mcp.run(transport=os.getenv("MCP_TRANSPORT_METHOD"))
+    mcp.run(transport=os.getenv("MCP_TRANSPORT_METHOD"), host="0.0.0.0")
