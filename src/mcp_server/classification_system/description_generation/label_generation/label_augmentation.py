@@ -89,14 +89,19 @@ class LabelDescriptionGenerator:
         )
 
         return f"""
-        Du bist ein Experte für amtliche deutsche Statistiken. 
-        Erstelle eine englische `detailed_description` für die Parent-Kategorie basierend auf:
-        1. Zusammenfassung des Umfangs.
-        2. Zusammenfassung der Keywords/Inclusions der Children.
-        3. Explizite Abgrenzung (Exclusions).
+        You are an expert in official statistics. Your task is to fill in the `detailed_description` field for a parent category accurately, comprehensively, and factually. You are provided with the code and short description of the parent category, as well as a JSON-like array containing all subordinate categories (children).
 
-        Eingabedaten:
+        Follow these criteria when creating the description:
+
+        1. **Summary of Scope:** Define in 1-2 introductory sentences what this parent category encompasses as a whole, based on the child categories.
+        2. **Detailed Inclusions:** Group the most important `keywords` and `explicit_inclusions` of all child categories into logical clusters. Use clear, official statistical language (e.g., "This includes, among others..."). Always cite the explicit subcategories in parentheses.
+        3. **Exclusions:** Examine the `exclusions` field for all children. If exclusions are present, state them explicitly and clearly at the end of the description (e.g., "This does not include...").
+        4. **Tone & Language:** The text must be written in the language of the input and correspond to a natural, professional tone.
+
+        Here is the input data for the current category:
         {context}
+
+        Please generate exclusively the text for the `detailed_description` of the parent category.
         """
 
     def generate_descriptions(self, max_depth: int, output_path: str) -> None:

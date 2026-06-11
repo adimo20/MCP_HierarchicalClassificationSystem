@@ -9,7 +9,7 @@ import os
 class DescriptionGenerationPipeline:
     def __init__(
         self,
-        classification_name:Literal["SEA", "COICOP", "WZ"],
+        classification_name:Literal["SEA", "COICOP", "WZ", "KlassServer"],
         path_classification_data:str,
         api_key:str,
         api_base:str,
@@ -25,7 +25,7 @@ class DescriptionGenerationPipeline:
         self.description_generator = self._initialise_description_generator()
         
     def _load_classification_system(self):
-        if self.classification_name == "SEA":
+        if self.classification_name in ["SEA", "WZ", "KlassServer"]:
             return XMLDataLoader(self.path_classification_data).load_dataset()
         if self.classification_name == "COICOP":
             return CoicopDataLoader(self.path_classification_data).load_dataset()
