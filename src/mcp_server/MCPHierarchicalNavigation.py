@@ -34,7 +34,7 @@ def get_root_category_codes_and_descriptions() -> list[dict]:
     Returns:
         list[dict]: A list of dictionaries containing the top-level 'code' (e.g., '01', '02') and its overarching 'description'.
     """
-    root_categories: list[str] = [f"0{i}" if i < 10 else str(i) for i in range(16)]
+    root_categories: list[str] = [f"0{i}" if i < 10 else str(i) for i in range(1,16)]
     return [
         {
             "code": classification_system.classification.get_code(code).to_dict().get("code"),
