@@ -1,6 +1,8 @@
 from classification_system.description_generation.label_generation.label_augmentation import LabelDescriptionGenerator
 from classification_system.description_generation.dataloaders.CoicopDataloader import CoicopDataLoader
 from classification_system.description_generation.dataloaders.KlassServerDataloader import XMLDataLoader
+from classification_system.description_generation.dataloaders.NaceDataloader import load_nace
+
 from classification_system.classification_system import ClassificationSystem, Code
 from typing import Literal
 import argparse
@@ -9,7 +11,7 @@ import os
 class DescriptionGenerationPipeline:
     def __init__(
         self,
-        classification_name:Literal["SEA", "COICOP", "WZ", "KlassServer"],
+        classification_name:Literal["SEA", "COICOP", "WZ", "KlassServer", "NACE"],
         path_classification_data:str,
         api_key:str,
         api_base:str,
@@ -27,8 +29,10 @@ class DescriptionGenerationPipeline:
     def _load_classification_system(self):
         if self.classification_name in ["SEA", "WZ", "KlassServer"]:
             return XMLDataLoader(self.path_classification_data).load_dataset()
-        if self.classification_name == "COICOP":
+        elif self.classification_name == "COICOP":
             return CoicopDataLoader(self.path_classification_data).load_dataset()
+        elif self.classification_name == "NACE":
+            return load_nace(self.path_classification_data)
         else:
             raise Exception("Classification Type not supportet!")
 

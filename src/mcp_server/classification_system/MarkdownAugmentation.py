@@ -209,7 +209,7 @@ class MarkdownReport:
             examples = [[] for _ in range(len(codes))]
         return "\n---\n".join(
             [
-                markdown_example.code_to_markdown(
+                self.markdown_example.code_to_markdown(
                     code=code,
                     trace=trace,
                     examples=ex
