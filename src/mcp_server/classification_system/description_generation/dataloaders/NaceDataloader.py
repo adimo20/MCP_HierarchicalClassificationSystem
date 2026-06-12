@@ -9,15 +9,15 @@ def load_nace(
     """Loads the official NACE documentation from an xlsx file and transforms it into a structure we can load with Code/ClassificationSystem"""
     
     df = pd.read_excel(path, dtype=str)
-    colnames = ["ID", "HEADING", "Includes", "LEVEL", "IncludesAlso", "Excludes"]
+    colnames = ["ID", "HEADING", "PARENT_ID", "Includes", "LEVEL", "IncludesAlso", "Excludes"]
     
     df = df[colnames]
-    df.columns = ["code", "description", "Includes", "level", "IncludesAlso", "Excludes"]
+    df.columns = ["code", "description", "parent_code", "Includes", "level", "IncludesAlso", "Excludes"]
 
     for c in df.columns:
         df[c] = df[c].fillna('')
     
-    df["details"] = df.apply(lambda row: {"includes" : row["Includes"], "alsoIcludes" : row["IncludesAlso"], "excludes" : row["Excludes"]}, axis=1)
+    df["details"] = df.apply(lambda row: {"parent_code" : row["parent_code"], "includes" :  row["Includes"], "alsoIcludes" : row["IncludesAlso"], "excludes" : row["Excludes"]}, axis=1)
     df = df[["code", "description", "level", "details"]]
 
 
