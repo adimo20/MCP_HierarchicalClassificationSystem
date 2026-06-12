@@ -86,10 +86,15 @@ def get_children(parent_code: str) -> list[dict[str, str]]:
                 ...
               ]
     """
-    children: list = classification_system.classification.get_children(parent=parent_code)
+    if parent_code not in ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V']:
+            children: list = classification_system.classification.get_children(parent=parent_code)      
+    else:
+        children_c:list = classification_system.classification.get_code(parent_code).to_dict().get("details").get("children_codes")
+        children: list = [classification_system.classification.get_code(c) for c in children_c]
     children_json: dict[str, str] = [
         {"code": c.code, "description": c.description} for c in children
     ]
+
     return children_json
 
 
