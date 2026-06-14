@@ -20,32 +20,52 @@ mlflow.dspy.autolog()
 
 class ClassificationSignature(dspy.Signature):
     """
-    You are an expert taxonomist and retail data classification agent. 
+    You are an expert taxonomist and retail data classification agent.
     Your task is to accurately classify a given retail product into the "Systematik der Einnahmen und Ausgaben Privater Haushalte" (SEA) classification system.
 
-    You will be provided with the product's name, brand, price, descriptive details, and the retailer's internal category. 
-    
-    To find the most accurate SEA code, you must actively navigate the classification hierarchy using the provided tools. Follow this methodology:
-    1. Analyze the Input: Evaluate the product data (including brand and details) to form an initial hypothesis about its broad category.
-    2. Navigate Top-Down: If unsure where to start, use `get_root_category_codes_and_descriptions`. 
-    3. Drill Down: Use `get_children` iteratively to explore deeper into the hierarchy until you reach the lowest applicable leaf node.
-    4. Verify: Use `get_code_specification` on candidate codes to read their official rules, inclusions, and exclusions. Ensure your product strictly fits the definition.
-    5. Reach Goal: Ensure you have reached SEA level 4 (a 5-digit code).
-    6. Avoid Over-specification: If your search leads to a highly specific code but the input data is vague, use `get_parent` to step back up to the safest, broader parent category. Never guess missing demographics or materials.
-    
-    CRITICAL: In your output, you MUST provide a summary of your exploration process in the field `exploration_summary`. List the specific nodes (codes and descriptions) you visited, explain the reasoning behind moving to children or parent nodes, and justify why you chose the final code based on the specifications you read.
+    You will be provided with the product's name, brand, price, descriptive details, and the retailer's internal category.
+
+    You MUST follow this exact iterative navigation procedure. Do not skip, reorder, or shortcut these steps.
+
+    STEP 1 — START AT THE ROOT:
+    - Begin every classification by calling `get_root_category_codes_and_descriptions` to retrieve all top-level divisions.
+
+    STEP 2 — SELECT RELEVANT CODES:
+    - From the returned list, select the relevant candidate code(s) that could plausibly contain the product, based on the product data (name, brand, details, retailer category).
+    - You may select more than one candidate if several are plausible.
+
+    STEP 3 — INSPECT SPECIFICATIONS:
+    - Call `get_code_specification` on the relevant code(s) you selected.
+    - Read the official rules, inclusions, and exclusions to confirm the product genuinely fits before descending further. Use the specifications to discard candidates that do not fit.
+
+    STEP 4 — GO ONE LEVEL DEEPER:
+    - For the confirmed relevant code, call `get_children` to retrieve its direct child categories (this increases the hierarchy level by one).
+
+    STEP 5 — LOOP:
+    - Repeat the cycle of [select relevant codes from children] → [`get_code_specification` to verify] → [`get_children` to go one level deeper] for each level of the hierarchy.
+    - At every level you must re-select the relevant code(s) from the children, verify them with `get_code_specification`, and only then descend again with `get_children`.
+
+    STEP 6 — TERMINATE:
+    - Stop the loop and produce the output ONLY when you have reached and verified a correct SEA level-4 node (a 5-digit code). This 5-digit code is the terminal condition.
+    - Do not terminate early on a 2-, 3-, or 4-digit code.
+
+    ABSTRACTION RULE:
+    - If descending leads you toward a code that is more specific than the input data justifies (e.g., it requires a demographic, material, or specification that is not present in the product data), use `get_parent` to step back up to the safest broader parent. Never guess missing demographics or materials.
+
+    CRITICAL — EXPLORATION SUMMARY:
+    - In `exploration_summary` you MUST log the full path taken: every node visited (code and description) in order, which codes you selected as relevant at each level and why, what the specifications told you, where you went deeper, and any point where you used `get_parent` to abstract back up. Justify the final 5-digit code based on the specifications you read.
     """
     product_name: str = dspy.InputField(desc="Product to classify.")
     brand: str = dspy.InputField(desc="The brand or manufacturer of the product.")
     price: str = dspy.InputField(desc="Price of the product to classify.")
     details: str = dspy.InputField(desc="Details provided by the retailer.")
     retailer_category: str = dspy.InputField(desc="Product category the retailer lists this product as.")
-    
+
     exploration_summary: str = dspy.OutputField(
-        desc="A detailed log of the hierarchy nodes visited, the navigation steps taken, and the reasoning behind reaching the final SEA code."
+        desc="A detailed, ordered log of every hierarchy node visited (code + description), the relevant codes selected at each level, the specification checks performed, the level-deeper steps taken, and the reasoning behind reaching the final 5-digit SEA code."
     )
     sea: str = dspy.OutputField(
-        desc="The final 5-digit SEA code and its description that most accurately fits the product. NEVER write a description into this field. Just write the code in this field."
+        desc="The final 5-digit SEA code that most accurately fits the product. NEVER write a description into this field. Just write the code in this field."
     )
 
 class RetailClassificationAgent:
@@ -194,11 +214,11 @@ if __name__ == "__main__":
     classification_agent = RetailClassificationAgent()
     print("Initialised agent!\nClassifying product now!")
     answer = classification_agent.agent(
-        product_name=  "Bunte Vielfalt, Alpenmilch",
-        price= "1,99 €",
-        brand="Ritter Sport",
-        details=rf"Produktdetails\nJe 100-g-Packung\n",
-        retailer_category=" Startseite  Süßigkeiten & salzige Snacks  Schokolade " 
+        product_name=  "MAIZENA Malzextrakte",
+        price= "2,19 €",
+        brand="MAIZENA",
+        details=rf"Reine Malzextrakte",
+        retailer_category=" Startseite Vorräte Grundnahrungsmittel Hülsenfrüchte, Mais & Getreide MAIZENA Malzextrakte" 
     )
     print(answer.reasoning)
     print(answer.sea)
